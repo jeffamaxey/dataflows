@@ -16,8 +16,7 @@ class sources(DataStreamProcessor):
         yield from super().process_resources(resources)
         source: DataStream
         for source in self.sources:
-            for res in source.res_iter:
-                yield res
+            yield from source.res_iter
 
     def process_datapackage(self, dp: Package):
         super().process_datapackage(dp)

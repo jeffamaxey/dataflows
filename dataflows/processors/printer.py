@@ -29,7 +29,7 @@ def _table_print(data, kwargs):
 def truncate_cell(value, max_size):
     value = str(value)
     if max_size is not None and len(value) > max_size:
-        return value[:max_size] + ' ...'
+        return f'{value[:max_size]} ...'
     else:
         return value
 

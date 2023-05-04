@@ -23,7 +23,7 @@ class validate(DataStreamProcessor):
             validator = args[0]
             assert isfunction(validator), 'Validator must be callable'
             validator = self.rows_validator(validator)
-        elif len(args) == 0:
+        elif not args:
             validator = self.validate_with_schema()
         else:
             assert False, 'Unexpected number of arguments'
@@ -39,10 +39,12 @@ class validate(DataStreamProcessor):
         def func(rows: ResourceWrapper):
             res_name = rows.res.name
             for i, row in enumerate(rows):
-                if not row_validator(row):
-                    if not self.on_error(res_name, row, i, None, None):
-                        continue
+                if not row_validator(row) and not self.on_error(
+                    res_name, row, i, None, None
+                ):
+                    continue
                 yield row
+
         return func
 
     def validate_with_schema(self):

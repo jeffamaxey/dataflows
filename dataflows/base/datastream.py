@@ -10,7 +10,7 @@ class DataStream:
     def merge_stats(self):
         ret = {}
         for s in self.stats:
-            ret.update(s)
+            ret |= s
         return ret
 
     def _process(self):

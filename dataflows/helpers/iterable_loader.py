@@ -43,14 +43,9 @@ class iterable_storage(Storage):
                 types.add('datetime')
             elif isinstance(value, datetime.date):
                 types.add('date')
-            elif value is None:
-                pass
-            else:
+            elif value is not None:
                 assert 'Unknown Python type: %r' % value
-        if len(types) != 1:
-            return 'any'
-        else:
-            return types.pop()
+        return 'any' if len(types) != 1 else types.pop()
 
     def describe(self, _, descriptor=None):
         if descriptor is not None:
@@ -94,7 +89,7 @@ class iterable_loader(DataStreamProcessor):
                 if mode == dict:
                     yield x
                 else:
-                    yield dict(zip(('col{}'.format(i) for i in range(len(x))), x))
+                    yield dict(zip((f'col{i}' for i in range(len(x))), x))
         except Exception as e:
             self.exc = e
             raise
@@ -102,11 +97,11 @@ class iterable_loader(DataStreamProcessor):
     def process_datapackage(self, dp: Package):
         name = self.name
         if name is None:
-            name = 'res_{}'.format(len(dp.resources) + 1)
-        self.res = Resource(dict(
-            name=name,
-            path='{}.csv'.format(name)
-        ), storage=iterable_storage(self.handle_iterable()))
+            name = f'res_{len(dp.resources) + 1}'
+        self.res = Resource(
+            dict(name=name, path=f'{name}.csv'),
+            storage=iterable_storage(self.handle_iterable()),
+        )
         self.res.infer()
         if self.exc is not None:
             raise self.exc

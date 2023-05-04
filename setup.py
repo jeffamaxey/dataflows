@@ -13,8 +13,7 @@ def read(*paths):
     """Read a text file."""
     basedir = os.path.dirname(__file__)
     fullpath = os.path.join(basedir, *paths)
-    contents = io.open(fullpath, encoding='utf-8').read().strip()
-    return contents
+    return io.open(fullpath, encoding='utf-8').read().strip()
 
 
 # Prepare

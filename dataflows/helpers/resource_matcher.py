@@ -8,7 +8,7 @@ class ResourceMatcher(object):
         if resources is None:
             self.resources = None
         elif isinstance(self.resources, str):
-            self.resources = re.compile('^' + self.resources + '$')
+            self.resources = re.compile(f'^{self.resources}$')
             self.re = True
         elif isinstance(self.resources, int):
             if isinstance(datapackage, dict):

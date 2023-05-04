@@ -136,7 +136,6 @@ class load(DataStreamProcessor):
             self.iterators = (resource for resource, descriptor in zip(resource_iterator, resources)
                               if resource_matcher.match(descriptor['name']))
 
-        # If load_source is string:
         else:
             # Handle Environment vars if necessary:
             if self.load_source.startswith('env://'):
@@ -154,7 +153,6 @@ class load(DataStreamProcessor):
                         self.resource_descriptors.append(resource.descriptor)
                         self.iterators.append(resource.iter(keyed=True, cast=True))
 
-            # Loading for any other source
             else:
                 path = os.path.basename(self.load_source)
                 path = os.path.splitext(path)[0]
@@ -200,7 +198,7 @@ class load(DataStreamProcessor):
                     })
                 descriptor['schema'] = schema
                 descriptor['format'] = self.options.get('format', stream.format)
-                descriptor['path'] += '.{}'.format(stream.format)
+                descriptor['path'] += f'.{stream.format}'
                 self.iterators.append(stream.iter(keyed=True))
         dp.descriptor.setdefault('resources', []).extend(self.resource_descriptors)
         return dp
@@ -222,10 +220,7 @@ class load(DataStreamProcessor):
 
     def stringer(self, iterator):
         for r in iterator:
-            yield dict(
-                (k, str(v)) if not isinstance(v, str) else (k, v)
-                for k, v in r.items()
-            )
+            yield dict((k, v) if isinstance(v, str) else (k, str(v)) for k, v in r.items())
 
     def missing_values_extractor(self, iterator):
         source = self.extract_missing_values['source']
@@ -235,9 +230,8 @@ class load(DataStreamProcessor):
             mapping = {}
             if values:
                 for key, value in row.items():
-                    if not source or key in source:
-                        if value in values:
-                            mapping[key] = value
+                    if (not source or key in source) and value in values:
+                        mapping[key] = value
             row[target] = mapping
             yield row
 
@@ -262,7 +256,7 @@ class load(DataStreamProcessor):
             counter[header] += 1
             if counter[header] > 1:
                 if counter[header] == 2:
-                    headers[headers.index(header)] = '%s (%s)' % (header, 1)
-                header = '%s (%s)' % (header, counter[header])
+                    headers[headers.index(header)] = f'{header} (1)'
+                header = f'{header} ({counter[header]})'
             headers.append(header)
         return headers

@@ -34,12 +34,9 @@ def median(values):
     if values is None:
         return None
     ll = len(values)
-    mid = int(ll/2)
+    mid = ll // 2
     values = sorted(values)
-    if ll % 2 == 0:
-        return (values[mid - 1] + values[mid])/2
-    else:
-        return values[mid]
+    return (values[mid - 1] + values[mid])/2 if ll % 2 == 0 else values[mid]
 
 
 def update_counter(curr, new):
@@ -139,7 +136,7 @@ def fix_fields(fields):
 
 def expand_fields(fields, schema_fields):
     if '*' in fields:
-        existing_names = set(f['name'] for f in fields.values())
+        existing_names = {f['name'] for f in fields.values()}
         spec = fields.pop('*')
         for sf in schema_fields:
             sf_name = sf['name']
@@ -162,12 +159,12 @@ def order_fields(fields, schema_fields):
 def concatenator(resources, all_target_fields, field_mapping):
     for resource_ in resources:
         for row in resource_:
-            processed = dict((k, '') for k in all_target_fields)
+            processed = {k: '' for k in all_target_fields}
             values = [(field_mapping[k], v) for (k, v)
                     in row.items()
                     if k in field_mapping]
-            assert len(values) > 0
-            processed.update(dict(values))
+            assert values
+            processed |= dict(values)
             yield processed
 
 
@@ -205,10 +202,7 @@ def join_aux(source_name, source_key, source_delete,  # noqa: C901
                 name = spec['name']
                 curr = current.get(field)
                 agg = spec['aggregate']
-                if agg != 'count':
-                    new = row.get(name)
-                else:
-                    new = ''
+                new = row.get(name) if agg != 'count' else ''
                 if new is not None:
                     current[field] = AGGREGATORS[agg].func(curr, new)
                 elif field not in current:
@@ -225,13 +219,13 @@ def join_aux(source_name, source_key, source_delete,  # noqa: C901
             # just empty the iterable
             collections.deque(indexer(resource), maxlen=0)
             for key, value in db.items():
-                row = dict(
-                    (f, None) for f in fields.keys()
+                row = {f: None for f in fields.keys()}
+                row.update(
+                    {
+                        k: AGGREGATORS[fields[k]['aggregate']].finaliser(v)
+                        for k, v in value.items()
+                    }
                 )
-                row.update(dict(
-                    (k, AGGREGATORS[fields[k]['aggregate']].finaliser(v))
-                    for k, v in value.items()
-                ))
                 yield row
         else:
             for row_number, row in enumerate(resource, start=1):
@@ -242,27 +236,23 @@ def join_aux(source_name, source_key, source_delete,  # noqa: C901
                 except KeyError:
                     if mode == 'inner':
                         continue
-                    extra = dict(
-                        (k, row.get(k))
-                        for k in fields.keys()
-                    )
+                    extra = {k: row.get(k) for k in fields.keys()}
                 row.update(extra)
                 yield row
             if mode == 'full-outer':
                 for key, value in db_keys_usage.items():
                     if value is False:
-                        extra = create_extra_by_key(key)
-                        yield extra
+                        yield create_extra_by_key(key)
 
     # Creates extra by key
     def create_extra_by_key(key):
         extra = db.get(key)
         key = extra.pop('__key__', None)
-        extra = dict(
-            (k, AGGREGATORS[fields[k]['aggregate']].finaliser(v))
+        extra = {
+            k: AGGREGATORS[fields[k]['aggregate']].finaliser(v)
             for k, v in extra.items()
             if k in fields
-        )
+        }
         if key:
             for k, v in zip(target_key.key_list, key):
                 extra[k] = v
@@ -303,8 +293,9 @@ def join_aux(source_name, source_key, source_delete,  # noqa: C901
                         next(filter(lambda f: f['name'] == spec['name'],
                                     source_spec['schema']['fields']))
                 except StopIteration:
-                    raise KeyError('Failed to find field with name %s in resource %s' %
-                                   (spec['name'], source_spec['name']))
+                    raise KeyError(
+                        f"Failed to find field with name {spec['name']} in resource {source_spec['name']}"
+                    )
                 if copy_properties:
                     to_copy = copy.deepcopy(source_field)
                 data_type = source_field['type']
@@ -312,8 +303,9 @@ def join_aux(source_name, source_key, source_delete,  # noqa: C901
                 existing_field = next(iter(filter(
                     lambda f: f['name'] == name,
                     target_fields)))
-                assert existing_field['type'] == data_type, \
-                    'Reusing %s but with different data types: %s != %s' % (name, existing_field['type'], data_type)
+                assert (
+                    existing_field['type'] == data_type
+                ), f"Reusing {name} but with different data types: {existing_field['type']} != {data_type}"
             except StopIteration:
                 to_copy.update({
                     'name': name,
@@ -351,8 +343,9 @@ def join_aux(source_name, source_key, source_delete,  # noqa: C901
                         source_spec,
                         {
                             'name': target_name,
-                            'path': os.path.join('data', target_name + '.csv')
-                        })
+                            'path': os.path.join('data', f'{target_name}.csv'),
+                        },
+                    )
                     new_resources.append(resource)
 
             elif resource['name'] == target_name:

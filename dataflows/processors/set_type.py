@@ -15,7 +15,7 @@ class set_type(DataStreamProcessor):
         self.name = re.compile(f'^{name}$')
         self.options = options
         self.resources = resources
-        self.field_names = dict()
+        self.field_names = {}
         self.on_error = on_error
         self.transform = self.wrap_transformer(transform) if transform else None
 
@@ -68,5 +68,5 @@ class set_type(DataStreamProcessor):
                         field.update(self.options)
                         self.field_names.setdefault(res['name'], []).append(field['name'])
                         added = True
-        assert added, 'Failed to find field {} in schema'.format(self.name)
+        assert added, f'Failed to find field {self.name} in schema'
         return dp

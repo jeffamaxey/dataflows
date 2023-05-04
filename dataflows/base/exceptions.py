@@ -12,8 +12,7 @@ class ProcessorError(DataflowsException):
         super().__init__(str(cause))
 
     def __str__(self):
-        return 'Errored in processor %s in position #%s: %s' % \
-                    (self.processor_name, self.processor_position, self.cause)
+        return f'Errored in processor {self.processor_name} in position #{self.processor_position}: {self.cause}'
 
 
 class SourceLoadError(DataflowsException):

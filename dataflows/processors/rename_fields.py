@@ -5,10 +5,7 @@ from ..helpers.resource_matcher import ResourceMatcher
 
 def process_resource(rows, fields):
     for row in rows:
-        yield dict(
-            (fields.get(k, k), v)
-            for k, v in row.items()
-        )
+        yield {fields.get(k, k): v for k, v in row.items()}
 
 
 def rename_fields(fields, resources=None, regex=True):
@@ -24,12 +21,12 @@ def rename_fields(fields, resources=None, regex=True):
             ), tgt) for src, tgt in fields.items()
         ]
         matched = set()
-        renames = dict()
-        renamed_fields = dict()
+        renames = {}
+        renamed_fields = {}
         for resource in dp_resources:
             res_name = resource['name']
             renamed_fields.setdefault(res_name, set())
-            renames.setdefault(res_name, dict())
+            renames.setdefault(res_name, {})
             if matcher.match(res_name):
                 schema_fields = resource['schema'].get('fields', [])
                 for sf in schema_fields:
@@ -48,7 +45,7 @@ def rename_fields(fields, resources=None, regex=True):
             src.pattern for src, _ in field_res
             if src.pattern not in matched
         ]
-        if len(not_matched) > 0:
+        if not_matched:
             print('WARNING: Failed to match these fields to rename {!r}'.format(not_matched))
         yield package.pkg
 

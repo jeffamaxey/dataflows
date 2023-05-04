@@ -10,11 +10,7 @@ class conditional(DataStreamProcessor):
 
     def _process(self):
         ds = self.source._process()
-        if self.predicate(ds.dp):
-            if callable(self.flow):
-                flow = self.flow(ds.dp)
-            else:
-                flow = self.flow
-            return flow.datastream(ds)
-        else:
+        if not self.predicate(ds.dp):
             return ds
+        flow = self.flow(ds.dp) if callable(self.flow) else self.flow
+        return flow.datastream(ds)

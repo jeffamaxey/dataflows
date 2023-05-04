@@ -70,9 +70,9 @@ class ExcelFormat(FileFormat):
         super(ExcelFormat, self).__init__(worksheet, schema, **options)
 
         if use_titles:
-            headers = dict((f.name, f.descriptor.get('title', f.name)) for f in schema.fields)
+            headers = {f.name: f.descriptor.get('title', f.name) for f in schema.fields}
         else:
-            headers = dict((f.name, f.name) for f in schema.fields)
+            headers = {f.name: f.name for f in schema.fields}
         self.write_transformed_row(headers)
 
     @classmethod

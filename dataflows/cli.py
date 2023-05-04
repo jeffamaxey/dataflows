@@ -224,23 +224,31 @@ or leave empty for an interactive walkthrough.
 
     filename = '{slug}.py'.format(**answers)
     with open(filename, 'w') as out:
-        print('Writing processing code into {}'.format(filename))
+        print(f'Writing processing code into {filename}')
         out.write(render(answers))
 
     try:
-        print('Running {}'.format(filename))
-        ret = subprocess.check_output(sys.executable + ' ' + filename,
-                                      stderr=subprocess.PIPE, universal_newlines=True, shell=True)
+        print(f'Running {filename}')
+        ret = subprocess.check_output(
+            f'{sys.executable} {filename}',
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+            shell=True,
+        )
         print(ret)
         print('Done!')
     except subprocess.CalledProcessError as e:
         print('Processing failed, here''s the error:')
         print(e.stderr)
-        answers = inquirer.prompt([
-            inquirer.Confirm('edit',
-                            message='Would you like to open {} in the default editor?'.format(filename),
-                            default=False)
-        ])
+        answers = inquirer.prompt(
+            [
+                inquirer.Confirm(
+                    'edit',
+                    message=f'Would you like to open {filename} in the default editor?',
+                    default=False,
+                )
+            ]
+        )
         if answers['edit']:
             click.edit(filename=filename)
 

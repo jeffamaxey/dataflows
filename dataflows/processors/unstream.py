@@ -12,9 +12,7 @@ def unstream(file=sys.stdin):
 
     def read():
         line = file.readline().strip()
-        if len(line) > 0:
-            return ejson.loads(line)
-        return None
+        return ejson.loads(line) if len(line) > 0 else None
 
     def res_reader():
         while True:

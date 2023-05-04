@@ -48,10 +48,7 @@ class XMLParser(Parser):
 
         parsed = parker.data(parse(self.__chars).getroot())
         elements = list(parsed.values())
-        if len(elements) > 0:
-            elements = elements[0]
-        else:
-            elements = []
+        elements = elements[0] if elements else []
         for row_number, row in enumerate(elements, start=1):
             keys, values = zip(*(row.items()))
             yield (row_number, list(keys), list(values))

@@ -10,7 +10,7 @@ def _notify_checkpoint_saved(checkpoint_name):
     def step(package):
         yield package.pkg
         for rows in package:
-            yield (row for row in rows)
+            yield iter(rows)
         print(f'checkpoint saved: {checkpoint_name}')
 
     return step
@@ -35,10 +35,10 @@ class checkpoint(Flow):
 
     def _preprocess_chain(self):
         if os.path.exists(self.filename):
-            print('using checkpoint data from {}'.format(self.checkpoint_path))
+            print(f'using checkpoint data from {self.checkpoint_path}')
             return unstream(self.filename),
         else:
-            print('saving checkpoint to: {}'.format(self.checkpoint_path))
+            print(f'saving checkpoint to: {self.checkpoint_path}')
             return itertools.chain(self.chain, (stream(self.filename),
                                                 _notify_checkpoint_saved(self.checkpoint_name)))
 

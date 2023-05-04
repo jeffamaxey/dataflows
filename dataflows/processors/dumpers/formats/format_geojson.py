@@ -17,7 +17,7 @@ class GeoJSONFormat(JSONFormat):
         descriptor['mediatype'] = 'application/geo+json'
 
     def write_transformed_row(self, transformed_row):
-        properties = dict()
+        properties = {}
         geometry = None
         for k, v in transformed_row.items():
             if self.fields[k].type == 'geopoint':

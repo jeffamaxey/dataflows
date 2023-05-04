@@ -33,19 +33,23 @@ class FileFormat():
         # Set properties
         self.writer = writer
         self.headers = [f.name for f in schema.fields]
-        self.fields = dict((f.name, f) for f in schema.fields)
+        self.fields = {f.name: f for f in schema.fields}
         self.temporal_format_property = temporal_format_property
         self.missing_values = schema.descriptor.get('missingValues', [])
 
         # Set fields' serializers
         for field in schema.fields:
             serializer = self.SERIALIZERS.get(field.type, default_serializer)
-            if self.temporal_format_property:
-                if field.type in ['datetime', 'date', 'time']:
-                    format = field.descriptor.get(self.temporal_format_property, None)
-                    if format:
-                        strftime = getattr(datetime, field.type).strftime
-                        serializer = partial(strftime, format=format)
+            if self.temporal_format_property and field.type in [
+                'datetime',
+                'date',
+                'time',
+            ]:
+                if format := field.descriptor.get(
+                    self.temporal_format_property, None
+                ):
+                    strftime = getattr(datetime, field.type).strftime
+                    serializer = partial(strftime, format=format)
             field.descriptor['serializer'] = serializer
 
     @classmethod
@@ -55,8 +59,7 @@ class FileFormat():
 
     def __transform_row(self, row):
         try:
-            return dict((k, self.__transform_value(v, self.fields[k]))
-                        for k, v in row.items())
+            return {k: self.__transform_value(v, self.fields[k]) for k, v in row.items()}
         except Exception:
             logging.exception('Failed to transform row %r', row)
             raise

@@ -19,18 +19,18 @@ class KeyCalc(object):
                 context = row.copy()
                 for key, value in row.items():
                     # We need to stringify some types to make them properly comparable
-                    if key in key_list:
-                        # numbers
-                        # https://www.h-schmidt.net/FloatConverter/IEEE754.html
-                        if isinstance(value, (int, float, decimal.Decimal)):
-                            bits = BitArray(float=value, length=64)
-                            # invert the sign bit
-                            bits.invert(0)
-                            # invert negative numbers
-                            if value < 0:
-                                bits.invert(range(1, 64))
-                            context[key] = bits.hex
+                    if key in key_list and isinstance(
+                        value, (int, float, decimal.Decimal)
+                    ):
+                        bits = BitArray(float=value, length=64)
+                        # invert the sign bit
+                        bits.invert(0)
+                        # invert negative numbers
+                        if value < 0:
+                            bits.invert(range(1, 64))
+                        context[key] = bits.hex
                 return key_spec.format(**context)
+
             return func
         assert False, 'key should be either a format string or a row->string callable'
 

@@ -5,11 +5,7 @@ from ..helpers.resource_matcher import ResourceMatcher
 
 def process_resource(rows, fields):
     for row in rows:
-        yield dict(
-            (k, v)
-            for k, v in row.items()
-            if k in fields
-        )
+        yield {k: v for k, v in row.items() if k in fields}
 
 
 def delete_fields(fields, resources=None, regex=True):
@@ -36,7 +32,7 @@ def delete_fields(fields, resources=None, regex=True):
                     if not skip:
                         new_fields.append(sf)
                 not_matched = [f for f in field_res if f.pattern not in matched]
-                if len(not_matched) > 0:
+                if not_matched:
                     print('WARNING: Failed to match these fields to delete {!r}'.format(not_matched))
                 resource['schema']['fields'] = new_fields
                 new_field_names[resource['name']] = [f['name'] for f in new_fields]

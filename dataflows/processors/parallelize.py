@@ -71,8 +71,7 @@ def work(q_in: mp.Queue, q_out: mp.Queue, row_func):
             try:
                 row_func(row)
             except Exception as e:
-                print(pid, 'FAILED TO RUN row_func {}\n'.format(e))
-                pass
+                print(pid, f'FAILED TO RUN row_func {e}\n')
             q_out.put(row)
     except Exception:
         pass

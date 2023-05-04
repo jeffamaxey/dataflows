@@ -29,7 +29,7 @@ def test_dump_to_sql():
 
     # Check validity
     engine = create_engine('sqlite:///out/test.db')
-    result = list(dict(x) for x in engine.execute('select * from output_table'))
+    result = [dict(x) for x in engine.execute('select * from output_table')]
     assert result == data
 
 
@@ -60,7 +60,7 @@ def test_dump_to_sql_with_indexes():
     # Check indexes are present
     engine = create_engine('sqlite:///out/sql_with_indexes.db')
     inspector = reflection.Inspector.from_engine(engine)
-    indexes = [index for index in inspector.get_indexes('output_table')]
+    indexes = list(inspector.get_indexes('output_table'))
     assert indexes
 
 
@@ -325,18 +325,8 @@ def test_unpivot_simple():
     f = Flow(
         up_data,
         unpivot(
-            [
-                dict(
-                    name=r'v\d',
-                    keys=dict()
-                ),
-            ],
-            [],
-            dict(
-                name='v',
-                type='integer'
-            )
-        )
+            [dict(name=r'v\d', keys={})], [], dict(name='v', type='integer')
+        ),
     )
     results, _, _ = f.results()
     assert results[0] == [
@@ -357,15 +347,19 @@ def test_unpivot_any_resources():
     from dataflows import unpivot, validate
     data1 = [
         dict(
-            [('name', 'ike{}'.format(i))] +
-            [(str(year), year + i) for year in range(1990, 2020, 10)]
+            (
+                [('name', f'ike{i}')]
+                + [(str(year), year + i) for year in range(1990, 2020, 10)]
+            )
         )
         for i in range(5)
     ]
     data2 = [
         dict(
-            [('city', 'mike{}'.format(i))] +
-            [(str(year), year + i) for year in range(2050, 2080, 10)]
+            (
+                [('city', f'mike{i}')]
+                + [(str(year), year + i) for year in range(2050, 2080, 10)]
+            )
         )
         for i in range(5)
     ]
@@ -583,7 +577,7 @@ def test_sort_reverse_many_rows():
     )
     results, _, _ = f.results()
     results = results[0]
-    assert results[0:2] == [{'a': 999, 'b': 4}, {'a': 994, 'b': 4}]
+    assert results[:2] == [{'a': 999, 'b': 4}, {'a': 994, 'b': 4}]
     assert results[998:1000] == [{'a': 5, 'b': 0}, {'a': 0, 'b': 0}]
 
 
@@ -696,7 +690,7 @@ def test_deduplicate():
         deduplicate(),
     )
     results, _, _ = f.results()
-    assert set(x['c'] for x in results[0]) == {'First'}
+    assert {x['c'] for x in results[0]} == {'First'}
 
 
 def test_duplicate():
@@ -857,7 +851,7 @@ def test_load_strategies():
     res = {}
     for i_s in i_strategies:
         for c_s in c_strategies:
-            ret = res.setdefault(i_s + ' ' + c_s, [])
+            ret = res.setdefault(f'{i_s} {c_s}', [])
             Flow(
                 load('data/beatles_age.json', infer_strategy=i_s, cast_strategy=c_s, on_error=load.ERRORS_DROP),
                 load('data/beatles_age.csv', infer_strategy=i_s, cast_strategy=c_s, on_error=load.ERRORS_DROP),
@@ -925,10 +919,17 @@ def test_load_name_path():
 def test_load_from_package_resources():
     from dataflows import load
 
-    datapackage = {'resources': [{'name': 'my-resource-{}'.format(i),
-                                  'path': 'my-resource-{}.csv'.format(i),
-                                  'schema': {'fields': [{'name': 'foo', 'type': 'string'}]}} for i in range(2)]}
-    resources = ((row for row in [{'foo': 'bar{}'.format(i)}, {'foo': 'baz{}'.format(i)}]) for i in range(2))
+    datapackage = {
+        'resources': [
+            {
+                'name': f'my-resource-{i}',
+                'path': f'my-resource-{i}.csv',
+                'schema': {'fields': [{'name': 'foo', 'type': 'string'}]},
+            }
+            for i in range(2)
+        ]
+    }
+    resources = (iter([{'foo': f'bar{i}'}, {'foo': f'baz{i}'}]) for i in range(2))
 
     data, dp, *_ = Flow(
         load((datapackage, resources), resources=['my-resource-1']),
@@ -1075,11 +1076,11 @@ def test_set_type_resources():
     f = Flow(
         [dict(a=str(i)) for i in range(10)],
         [dict(b=str(i)) for i in range(10)],
-        [dict(c='0_' + str(i)) for i in range(10)],
+        [dict(c=f'0_{str(i)}') for i in range(10)],
         set_type('a', resources='res_[1]', type='integer'),
         set_type('b', resources=['res_2'], type='integer'),
         set_type('[cd]', resources=-1, type='number', groupChar='_'),
-        validate()
+        validate(),
     )
     results, dp, stats = f.results()
     print(dp.descriptor)
@@ -2109,7 +2110,8 @@ def test_conditional():
     ).results()
     def duplicate_last_field(dp):
         last_field = dp.descriptor['resources'][0]['schema']['fields'][-1]['name']
-        return Flow(add_field(last_field + '_1', 'integer', lambda r: r['a']))
+        return Flow(add_field(f'{last_field}_1', 'integer', lambda r: r['a']))
+
     result3, _, _ = Flow(
         data1, conditional(tester, duplicate_last_field)
     ).results()
@@ -2229,21 +2231,23 @@ def test_dump_to_excel():
     from dataflows import Flow, dump_to_path, update_resource
     data1 = [
         dict(
-            a=str(i) + 'str',
+            a=f'{str(i)}str',
             b=i,
             c=datetime.datetime.now() + datetime.timedelta(days=i),
             d=datetime.date.today() + datetime.timedelta(days=i),
             e=bool(i % 2),
-        ) for i in range(10)
+        )
+        for i in range(10)
     ]
     data2 = [
         dict(
-            a=str(i) + 'str',
+            a=f'{str(i)}str',
             b=i,
             c=datetime.datetime.now() + datetime.timedelta(days=i),
             d=datetime.date.today() + datetime.timedelta(days=i),
             e=bool(i % 2),
-        ) for i in range(10, 20)
+        )
+        for i in range(10, 20)
     ]
     filename = 'test_excel/test_excel.xlsx'
     Flow(

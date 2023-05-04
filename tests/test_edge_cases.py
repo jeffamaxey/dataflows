@@ -11,7 +11,6 @@ def test_exception_in_generator():
     def generator():
         for i in range(5):
             raise MyException()
-            yield {"i": i}
 
     with pytest.raises(exceptions.ProcessorError) as excinfo:
         Flow(generator(), printer()).process()

@@ -9,6 +9,4 @@ class row_processor(DataStreamProcessor):
 
     def process_row(self, row):
         ret = self.func(row)
-        if ret is None:
-            return row
-        return ret
+        return row if ret is None else ret

@@ -30,9 +30,9 @@ def duplicate(
         if source_ is None:
             source_ = package.pkg.descriptor['resources'][0]['name']
         if target_name_ is None:
-            target_name_ = source_ + '_copy'
+            target_name_ = f'{source_}_copy'
         if target_path is None:
-            target_path_ = target_name_ + '.csv'
+            target_path_ = f'{target_name_}.csv'
 
         def traverse_resources(resources):
             new_res_list = []
@@ -46,8 +46,7 @@ def duplicate(
                         new_res_list.append(res)
                     else:
                         yield res
-            for res in new_res_list:
-                yield res
+            yield from new_res_list
 
         descriptor = package.pkg.descriptor
         descriptor['resources'] = list(traverse_resources(descriptor['resources']))

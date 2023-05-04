@@ -6,16 +6,16 @@ from ..helpers.resource_matcher import ResourceMatcher
 def concatenator(resources, all_target_fields, field_mapping):
     for resource_ in resources:
         for row in resource_:
-            processed = dict((k, None) for k in all_target_fields)
+            processed = {k: None for k in all_target_fields}
             values = [(field_mapping[k], v) for (k, v)
                       in row.items()
                       if k in field_mapping and v is not None]
-            if len(values) == 0:
+            if not values:
                 message = 'Got an empty row after concatenation' +\
                     '(resource=%s, source=%r)' % (resource_.res.name, row)
-                assert len(values) > 0, message
+                assert values, message
 
-            processed.update(dict(values))
+            processed |= dict(values)
             yield processed
 
 
@@ -44,7 +44,7 @@ def concatenate(fields, target={}, resources=None):
                     field_mapping[source_field] = target_field
 
             if target_field in field_mapping:
-                raise RuntimeError('Duplicate appearance of %s' % target_field)
+                raise RuntimeError(f'Duplicate appearance of {target_field}')
 
             field_mapping[target_field] = target_field
 

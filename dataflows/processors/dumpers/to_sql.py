@@ -21,10 +21,7 @@ def jsonize(obj):
 
 def strize(obj):
     if isinstance(obj, dict):
-        return dict(
-            (k, strize(v))
-            for k, v in obj.items()
-        )
+        return {k: strize(v) for k, v in obj.items()}
     elif isinstance(obj, (str, int, float, bool)):
         return obj
     elif isinstance(obj, datetime.date):
@@ -72,8 +69,9 @@ class SQLDumper(DumperBase):
         for k, v in table_to_resource.items():
             v['table-name'] = k
 
-        self.converted_resources = \
-            dict((v['resource-name'], v) for v in table_to_resource.values())
+        self.converted_resources = {
+            v['resource-name']: v for v in table_to_resource.values()
+        }
 
         self.updated_column = updated_column
         self.updated_id_column = updated_id_column
@@ -98,46 +96,45 @@ class SQLDumper(DumperBase):
         resource_name = resource.res.name
         if resource_name not in self.converted_resources:
             return resource
+        converted_resource = self.converted_resources[resource_name]
+        mode = converted_resource.get('mode', 'rewrite')
+        table_name = converted_resource['table-name']
+        indexes_fields = converted_resource.get('indexes_fields', None)
+        storage = Storage(self.engine, prefix=table_name)
+        if mode == 'rewrite' and '' in storage.buckets:
+            storage.delete('')
+        schema_descriptor = resource.res.descriptor['schema']
+        schema = self.normalize_schema_for_engine(self.engine.dialect.name,
+                                                  schema_descriptor)
+        if '' not in storage.buckets:
+            logging.info('Creating DB table %s', table_name)
+            try:
+                storage.create('', schema, indexes_fields=indexes_fields)
+            except ValidationError as e:
+                logging.error('Error validating schema %r', schema_descriptor)
+                for err in e.errors:
+                    logging.error('Error validating schema: %s', err)
+                raise
         else:
-            converted_resource = self.converted_resources[resource_name]
-            mode = converted_resource.get('mode', 'rewrite')
-            table_name = converted_resource['table-name']
-            indexes_fields = converted_resource.get('indexes_fields', None)
-            storage = Storage(self.engine, prefix=table_name)
-            if mode == 'rewrite' and '' in storage.buckets:
-                storage.delete('')
-            schema_descriptor = resource.res.descriptor['schema']
-            schema = self.normalize_schema_for_engine(self.engine.dialect.name,
-                                                      schema_descriptor)
-            if '' not in storage.buckets:
-                logging.info('Creating DB table %s', table_name)
-                try:
-                    storage.create('', schema, indexes_fields=indexes_fields)
-                except ValidationError as e:
-                    logging.error('Error validating schema %r', schema_descriptor)
-                    for err in e.errors:
-                        logging.error('Error validating schema: %s', err)
-                    raise
-            else:
-                storage.describe('', schema)
+            storage.describe('', schema)
 
-            update_keys = None
-            if mode == 'update':
-                update_keys = converted_resource.get('update_keys')
-                if update_keys is None:
-                    update_keys = schema_descriptor.get('primaryKey', [])
-            logging.info('Writing to DB %s -> %s (mode=%s, keys=%s)',
-                         resource_name, table_name, mode, update_keys)
-            return map(self.get_output_row,
-                       storage.write(
-                           '',
-                           self.normalize_for_engine(self.engine.dialect.name,
-                                                     resource, schema_descriptor),
-                           keyed=True, as_generator=True,
-                           update_keys=update_keys,
-                           buffer_size=self.batch_size,
-                           use_bloom_filter=self.use_bloom_filter,
-                       ))
+        update_keys = None
+        if mode == 'update':
+            update_keys = converted_resource.get('update_keys')
+            if update_keys is None:
+                update_keys = schema_descriptor.get('primaryKey', [])
+        logging.info('Writing to DB %s -> %s (mode=%s, keys=%s)',
+                     resource_name, table_name, mode, update_keys)
+        return map(self.get_output_row,
+                   storage.write(
+                       '',
+                       self.normalize_for_engine(self.engine.dialect.name,
+                                                 resource, schema_descriptor),
+                       keyed=True, as_generator=True,
+                       update_keys=update_keys,
+                       buffer_size=self.batch_size,
+                       use_bloom_filter=self.use_bloom_filter,
+                   ))
 
     def get_output_row(self, written):
         row, updated, updated_id = written.row, written.updated, written.updated_id

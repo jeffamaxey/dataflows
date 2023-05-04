@@ -28,10 +28,7 @@ def get_type(res_fields, operation_fields, operation):
     if ('number' in types) or (operation == 'avg'):
         return 'number'
     # integers
-    if len(types):
-        return types[0]
-    # constant
-    return 'any'
+    return types[0] if len(types) else 'any'
 
 
 def process_resource(fields, rows):
@@ -75,7 +72,7 @@ def add_computed_field(*args, resources=None, **kw):
     def func(package):
         matcher = ResourceMatcher(resources, package.pkg)
         assert len(args) < 2, 'add_computed_fields expects at most one positional argument'
-        if len(args) == 0:
+        if not args:
             fields = [kw]
         elif len(args) == 1:
             fields = args[0]

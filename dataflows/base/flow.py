@@ -37,15 +37,12 @@ class Flow:
             elif isfunction(link):
                 sig = signature(link)
                 params = list(sig.parameters)
-                if len(params) == 1:
-                    if params[0] == 'row':
-                        ds = row_processor(link)(ds, position=position)
-                    elif params[0] == 'rows':
-                        ds = rows_processor(link)(ds, position=position)
-                    elif params[0] == 'package':
-                        ds = datapackage_processor(link)(ds, position=position)
-                    else:
-                        assert False, 'Failed to parse function signature %r' % params
+                if len(params) == 1 and params[0] == 'row':
+                    ds = row_processor(link)(ds, position=position)
+                elif len(params) == 1 and params[0] == 'rows':
+                    ds = rows_processor(link)(ds, position=position)
+                elif len(params) == 1 and params[0] == 'package':
+                    ds = datapackage_processor(link)(ds, position=position)
                 else:
                     assert False, 'Failed to parse function signature %r' % params
             elif isinstance(link, Iterable):

@@ -13,9 +13,7 @@ class datapackage_processor(DataStreamProcessor):
         self.dp = PackageWrapper(dp)
         self.dp_processor = self.func(self.dp)
         ret = next(self.dp_processor)
-        if ret is None:
-            return dp
-        return ret
+        return dp if ret is None else ret
 
     def process_resources(self, res_iter):
         self.dp.it = res_iter
